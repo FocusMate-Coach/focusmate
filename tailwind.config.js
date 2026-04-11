@@ -1,4 +1,3 @@
-// tailwind.config.js
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -8,33 +7,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        navy: {
-          950: '#020617', // 아주 어두운 밤하늘색
-          900: '#0F172A',
-          800: '#1E293B',
-          700: '#334155',
-        },
-        focusgreen: {
-          400: '#ADFB10', // 퓨어 네온 그린
-          500: '#8CE015',
-        }
+        space: '#030712', // 완전한 깊은 어둠
       },
       fontFamily: {
-        // 더 현대적이고 가독성 좋은 Pretendard 폰트를 메인으로 설정
         sans: ['Pretendard', 'Inter', 'system-ui', 'sans-serif'],
       },
-      // 물리적 플립 카드의 깊이감을 위한 특수 그림자 설정
-      dropShadow: {
-        'focus-neon': '0 0 20px rgba(173, 251, 16, 0.4)',
-      },
       animation: {
-        'fade-in-up': 'fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'fade-in-up': 'fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'aurora-1': 'aurora 15s ease infinite alternate',
+        'aurora-2': 'aurora 20s ease-in-out infinite alternate-reverse',
       },
       keyframes: {
         fadeInUp: {
-          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '0%': { opacity: '0', transform: 'translateY(30px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        aurora: {
+          '0%': { transform: 'translate(0, 0) scale(1) rotate(0deg)' },
+          '100%': { transform: 'translate(50px, -50px) scale(1.3) rotate(10deg)' },
         }
       }
     },

@@ -1,5 +1,6 @@
+// src/components/AIFeedback/AIFeedback.tsx
 import { useState } from 'react';
-import { Sparkles, TrendingUp, AlertCircle, Lightbulb, RefreshCw } from 'lucide-react';
+import { Sparkles, TrendingUp, AlertCircle, Lightbulb, RefreshCw, ChevronRight } from 'lucide-react';
 import OpenAI from 'openai';
 import type { StudySession } from '../../types';
 import { calcSummary, calcHourlyData, calcSubjectData, formatHour } from '../../utils/dataAnalysis';
@@ -135,149 +136,126 @@ export default function AIFeedback({ sessions }: AIFeedbackProps) {
 
   if (sessions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-slate-500">
-        <div className="text-6xl mb-4">🤖</div>
-        <p className="text-lg font-medium text-slate-400">학습 데이터가 없어요</p>
-        <p className="text-sm mt-2">타이머로 공부한 후 AI 분석을 받아보세요!</p>
+      <div className="flex flex-col items-center justify-center py-32 text-slate-500 bg-slate-800/30 rounded-3xl border border-white/5 backdrop-blur-sm">
+        <div className="text-6xl mb-6 opacity-80 animate-bounce">🤖</div>
+        <p className="text-xl font-semibold text-slate-300">데이터가 더 필요해요</p>
+        <p className="text-sm mt-2 text-slate-400">타이머를 사용해 데이터를 쌓으면 AI가 분석해 드립니다.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* 데이터 요약 */}
-      <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-        <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-          <span className="text-purple-400">📊</span> 분석할 학습 데이터
-        </h3>
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-2xl font-bold text-white">
-              {summary.totalMinutes >= 60 ? `${Math.floor(summary.totalMinutes / 60)}h` : `${summary.totalMinutes}m`}
-            </div>
-            <div className="text-xs text-slate-500 mt-1">총 학습 시간</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-purple-400">{summary.avgFocus}</div>
-            <div className="text-xs text-slate-500 mt-1">평균 집중도</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-white">{summary.sessionCount}</div>
-            <div className="text-xs text-slate-500 mt-1">총 세션 수</div>
-          </div>
+    <div className="space-y-8 max-w-4xl mx-auto animate-fade-in-up">
+      
+      {/* 에러 발생 시 보여주는 UI 추가 */}
+      {error && (
+        <div className="flex items-start gap-3 bg-red-900/30 border border-red-800/50 rounded-2xl p-5 text-red-300 text-sm animate-fade-in-up shadow-lg backdrop-blur-sm">
+          <AlertCircle size={18} className="shrink-0 mt-0.5" />
+          <span className="leading-relaxed">{error}</span>
         </div>
-      </div>
+      )}
 
-      {/* AI 분석 버튼 */}
+      {/* AI 분석 버튼 영역 (핵심 UI) */}
       {!feedback && !loading && (
-        <div className="text-center py-8">
+        <div className="text-center py-16 px-4 bg-slate-800/30 rounded-3xl border border-white/5 backdrop-blur-sm relative overflow-hidden shadow-xl">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 opacity-50"></div>
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 relative z-10">데이터가 준비되었습니다</h2>
+          <p className="text-slate-400 mb-10 relative z-10">FocusMate AI가 총 <span className="text-purple-400 font-bold">{summary.sessionCount}개</span>의 세션을 심층 분석할 준비를 마쳤습니다.</p>
+          
           <button
             onClick={handleGenerate}
-            className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white px-10 py-4 rounded-2xl font-semibold text-lg transition-all active:scale-95 shadow-lg shadow-purple-900/40"
+            className="group relative inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-10 py-5 rounded-2xl font-bold text-lg transition-all duration-300 active:scale-95 hover:shadow-[0_0_30px_rgba(168,85,247,0.4)] z-10"
           >
-            <Sparkles size={22} />
-            AI 학습 분석 시작
+            <Sparkles size={24} className="group-hover:rotate-12 transition-transform" />
+            초개인화 AI 리포트 생성하기
+            <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform opacity-70" />
           </button>
-          <p className="text-xs text-slate-500 mt-3">AI가 나만의 학습 패턴을 분석해 드려요</p>
         </div>
       )}
 
-      {/* 로딩 */}
+      {/* 로딩 애니메이션 */}
       {loading && (
-        <div className="space-y-4">
-          <div className="text-center py-6">
-            <div className="inline-flex items-center gap-3 text-purple-400 text-sm font-medium">
-              <RefreshCw size={18} className="animate-spin" />
-              AI가 학습 패턴을 분석하고 있어요...
+        <div className="space-y-6 py-12">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-500/20 text-purple-400 mb-6 border border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
+              <RefreshCw size={32} className="animate-spin" />
             </div>
+            <h3 className="text-xl font-bold text-white mb-2">데이터 스캐닝 중...</h3>
+            <p className="text-purple-300/80 text-sm">AI 모델이 {summary.totalMinutes}분의 학습 패턴을 분석하고 있습니다.</p>
           </div>
-          {[1, 2, 3].map(i => (
-            <div key={i} className="bg-slate-800 border border-slate-700 rounded-2xl p-5 animate-pulse">
-              <div className="h-4 bg-slate-700 rounded w-1/3 mb-3" />
-              <div className="h-3 bg-slate-700/60 rounded w-full mb-2" />
-              <div className="h-3 bg-slate-700/60 rounded w-4/5" />
-            </div>
-          ))}
+          <div className="grid gap-4 max-w-2xl mx-auto">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 animate-pulse flex flex-col gap-3">
+                <div className="h-5 bg-slate-700/50 rounded-md w-1/4" />
+                <div className="h-4 bg-slate-700/30 rounded-md w-full" />
+                <div className="h-4 bg-slate-700/30 rounded-md w-5/6" />
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* 에러 */}
-      {error && (
-        <div className="flex items-start gap-3 bg-red-900/30 border border-red-800 rounded-2xl p-5 text-red-300 text-sm">
-          <AlertCircle size={18} className="shrink-0 mt-0.5" />
-          {error}
-        </div>
-      )}
-
-      {/* 결과 */}
+      {/* 분석 결과 */}
       {feedback && (
-        <div className="space-y-4">
-          {/* 강점 */}
-          {feedback.strengths.length > 0 && (
-            <div className="bg-emerald-900/20 border border-emerald-800/50 rounded-2xl p-6">
-              <h4 className="flex items-center gap-2 text-emerald-400 font-semibold mb-3">
-                <TrendingUp size={18} />
+        <div className="space-y-6 animate-fade-in-up">
+          <div className="flex items-center justify-between bg-slate-800/50 backdrop-blur-md p-5 rounded-2xl border border-white/5 shadow-lg">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <Sparkles className="text-purple-400" size={20} /> AI 분석 리포트
+            </h3>
+            <button onClick={handleGenerate} className="text-xs flex items-center gap-1 text-slate-400 hover:text-white bg-slate-700/50 px-3 py-1.5 rounded-lg transition-colors">
+              <RefreshCw size={12} /> 재분석
+            </button>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* 강점 (초록색 테마) */}
+            <div className="bg-gradient-to-br from-emerald-900/20 to-slate-900/50 border border-emerald-500/20 rounded-3xl p-6 md:p-8 backdrop-blur-md shadow-lg hover:border-emerald-500/40 transition-colors">
+              <h4 className="flex items-center gap-3 text-emerald-400 font-bold text-lg mb-6">
+                <span className="p-2 bg-emerald-500/10 rounded-xl"><TrendingUp size={22} /></span>
                 학습 강점
               </h4>
-              <ul className="space-y-2">
+              <ul className="space-y-4">
                 {feedback.strengths.map((s, i) => (
-                  <li key={i} className="flex items-start gap-2 text-slate-300 text-sm">
-                    <span className="text-emerald-500 mt-0.5">✓</span>
-                    {s}
+                  <li key={i} className="flex items-start gap-3 text-slate-200 leading-relaxed">
+                    <span className="text-emerald-500 font-bold mt-1">✓</span> {s}
                   </li>
                 ))}
               </ul>
             </div>
-          )}
 
-          {/* 개선 포인트 */}
-          {feedback.improvements.length > 0 && (
-            <div className="bg-amber-900/20 border border-amber-800/50 rounded-2xl p-6">
-              <h4 className="flex items-center gap-2 text-amber-400 font-semibold mb-3">
-                <AlertCircle size={18} />
+            {/* 개선점 (주황색 테마) */}
+            <div className="bg-gradient-to-br from-amber-900/20 to-slate-900/50 border border-amber-500/20 rounded-3xl p-6 md:p-8 backdrop-blur-md shadow-lg hover:border-amber-500/40 transition-colors">
+              <h4 className="flex items-center gap-3 text-amber-400 font-bold text-lg mb-6">
+                <span className="p-2 bg-amber-500/10 rounded-xl"><AlertCircle size={22} /></span>
                 개선 포인트
               </h4>
-              <ul className="space-y-2">
+              <ul className="space-y-4">
                 {feedback.improvements.map((s, i) => (
-                  <li key={i} className="flex items-start gap-2 text-slate-300 text-sm">
-                    <span className="text-amber-500 mt-0.5">!</span>
-                    {s}
+                  <li key={i} className="flex items-start gap-3 text-slate-200 leading-relaxed">
+                    <span className="text-amber-500 font-bold mt-1">!</span> {s}
                   </li>
                 ))}
               </ul>
             </div>
-          )}
+          </div>
 
-          {/* 추천 행동 */}
-          {feedback.recommendations.length > 0 && (
-            <div className="space-y-3">
-              <h4 className="flex items-center gap-2 text-blue-400 font-semibold">
-                <Lightbulb size={18} />
-                맞춤 학습 추천
-              </h4>
+          {/* 추천 솔루션 (보라색 테마) */}
+          <div className="bg-gradient-to-br from-purple-900/20 to-indigo-900/10 border border-purple-500/20 rounded-3xl p-6 md:p-8 backdrop-blur-md shadow-lg mt-8 hover:border-purple-500/40 transition-colors">
+            <h4 className="flex items-center gap-3 text-purple-400 font-bold text-xl mb-8">
+              <span className="p-2 bg-purple-500/10 rounded-xl"><Lightbulb size={24} /></span>
+              내일을 위한 맞춤 솔루션
+            </h4>
+            <div className="grid gap-4">
               {feedback.recommendations.map((r, i) => (
-                <div key={i} className="bg-blue-900/20 border border-blue-800/50 rounded-2xl p-5">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
-                    <span className="text-white font-medium">{r.title}</span>
+                <div key={i} className="bg-slate-900/40 border border-white/5 rounded-2xl p-6 hover:bg-slate-800/60 transition-colors">
+                  <div className="flex items-center gap-4 mb-3">
+                    <span className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-bold flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.4)]">{i + 1}</span>
+                    <span className="text-white font-bold text-lg tracking-tight">{r.title}</span>
                   </div>
-                  {r.description && (
-                    <p className="text-slate-400 text-sm ml-9">{r.description}</p>
-                  )}
+                  {r.description && <p className="text-slate-400 leading-relaxed ml-12">{r.description}</p>}
                 </div>
               ))}
             </div>
-          )}
-
-          {/* 재분석 버튼 */}
-          <div className="text-center pt-2">
-            <button
-              onClick={handleGenerate}
-              className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-purple-400 transition-colors"
-            >
-              <RefreshCw size={14} />
-              다시 분석하기
-            </button>
           </div>
         </div>
       )}

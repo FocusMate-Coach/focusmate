@@ -136,35 +136,26 @@ export default function AIFeedback({ sessions }: AIFeedbackProps) {
 
   if (sessions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 text-slate-500 bg-slate-800/30 rounded-3xl border border-white/5 backdrop-blur-sm">
-        <div className="text-6xl mb-6 opacity-80 animate-bounce">🤖</div>
-        <p className="text-xl font-semibold text-slate-300">데이터가 더 필요해요</p>
-        <p className="text-sm mt-2 text-slate-400">타이머를 사용해 데이터를 쌓으면 AI가 분석해 드립니다.</p>
+      <div className="flex flex-col items-center justify-center py-32 text-slate-500 bg-slate-800/20 rounded-3xl border border-white/5 backdrop-blur-sm">
+        <div className="text-9xl mb-8 opacity-70">🤖</div>
+        <p className="text-2xl font-bold text-slate-300">학습 데이터가 더 필요해요</p>
+        <p className="text-base mt-3 text-slate-400">타이머로 공부를 시작하면 데이터가 쌓여요!</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto animate-fade-in-up">
-      
-      {/* 에러 발생 시 보여주는 UI 추가 */}
-      {error && (
-        <div className="flex items-start gap-3 bg-red-900/30 border border-red-800/50 rounded-2xl p-5 text-red-300 text-sm animate-fade-in-up shadow-lg backdrop-blur-sm">
-          <AlertCircle size={18} className="shrink-0 mt-0.5" />
-          <span className="leading-relaxed">{error}</span>
-        </div>
-      )}
-
+    <div className="space-y-10 max-w-5xl mx-auto selection:bg-teal-500/30">
       {/* AI 분석 버튼 영역 (핵심 UI) */}
       {!feedback && !loading && (
-        <div className="text-center py-16 px-4 bg-slate-800/30 rounded-3xl border border-white/5 backdrop-blur-sm relative overflow-hidden shadow-xl">
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 opacity-50"></div>
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 relative z-10">데이터가 준비되었습니다</h2>
-          <p className="text-slate-400 mb-10 relative z-10">FocusMate AI가 총 <span className="text-purple-400 font-bold">{summary.sessionCount}개</span>의 세션을 심층 분석할 준비를 마쳤습니다.</p>
+        <div className="text-center py-20 px-8 bg-slate-900/50 rounded-3xl border border-white/5 backdrop-blur-xl relative overflow-hidden shadow-[0_0_60px_rgba(20,184,166,0.1)]">
+          <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 to-emerald-500/10 opacity-70"></div>
+          <h2 className="text-3xl md:text-4xl font-black text-white mb-5 relative z-10 tracking-tighter">데이터가 준비되었습니다</h2>
+          <p className="text-slate-300 mb-12 relative z-10 max-w-2xl mx-auto leading-relaxed">FocusMate AI가 총 <span className="text-teal-400 font-black">{summary.sessionCount}개</span>의 세션을 심층 분석할 준비를 마쳤습니다.</p>
           
           <button
             onClick={handleGenerate}
-            className="group relative inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-10 py-5 rounded-2xl font-bold text-lg transition-all duration-300 active:scale-95 hover:shadow-[0_0_30px_rgba(168,85,247,0.4)] z-10"
+            className="group relative inline-flex items-center gap-3 bg-gradient-to-r from-teal-600 to-emerald-600 text-white px-12 py-5 rounded-3xl font-black text-lg transition-all active:scale-95 shadow-[0_0_30px_rgba(20,184,166,0.3)] z-10 hover:shadow-teal-500/50"
           >
             <Sparkles size={24} className="group-hover:rotate-12 transition-transform" />
             초개인화 AI 리포트 생성하기
@@ -175,20 +166,20 @@ export default function AIFeedback({ sessions }: AIFeedbackProps) {
 
       {/* 로딩 애니메이션 */}
       {loading && (
-        <div className="space-y-6 py-12">
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-500/20 text-purple-400 mb-6 border border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
-              <RefreshCw size={32} className="animate-spin" />
+        <div className="space-y-8 py-12">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-teal-500/20 text-teal-400 mb-7 border border-teal-500/30 shadow-[0_0_20px_rgba(20,184,166,0.2)]">
+              <RefreshCw size={36} className="animate-spin" />
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">데이터 스캐닝 중...</h3>
-            <p className="text-purple-300/80 text-sm">AI 모델이 {summary.totalMinutes}분의 학습 패턴을 분석하고 있습니다.</p>
+            <h3 className="text-2xl font-black text-white mb-2">데이터 스캐닝 중...</h3>
+            <p className="text-teal-300/90 text-sm">AI 모델이 {summary.totalMinutes}분의 학습 패턴을 분석하고 있습니다.</p>
           </div>
-          <div className="grid gap-4 max-w-2xl mx-auto">
+          <div className="grid gap-6 max-w-3xl mx-auto">
             {[1, 2, 3].map(i => (
-              <div key={i} className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 animate-pulse flex flex-col gap-3">
-                <div className="h-5 bg-slate-700/50 rounded-md w-1/4" />
-                <div className="h-4 bg-slate-700/30 rounded-md w-full" />
-                <div className="h-4 bg-slate-700/30 rounded-md w-5/6" />
+              <div key={i} className="bg-slate-800/40 border border-slate-700/50 rounded-3xl p-7 animate-pulse flex flex-col gap-4">
+                <div className="h-6 bg-slate-700/50 rounded-lg w-1/4" />
+                <div className="h-5 bg-slate-700/30 rounded-lg w-full" />
+                <div className="h-5 bg-slate-700/30 rounded-lg w-5/6" />
               </div>
             ))}
           </div>
@@ -197,42 +188,43 @@ export default function AIFeedback({ sessions }: AIFeedbackProps) {
 
       {/* 분석 결과 */}
       {feedback && (
-        <div className="space-y-6 animate-fade-in-up">
-          <div className="flex items-center justify-between bg-slate-800/50 backdrop-blur-md p-5 rounded-2xl border border-white/5 shadow-lg">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Sparkles className="text-purple-400" size={20} /> AI 분석 리포트
+        <div className="space-y-8 animate-fade-in-up">
+          <div className="flex items-center justify-between bg-slate-900/50 backdrop-blur-md p-6 rounded-2xl border border-white/5 shadow-xl">
+            <h3 className="text-xl font-extrabold text-white flex items-center gap-2">
+              <Sparkles className="text-teal-400" size={24} /> AI 분석 리포트
             </h3>
-            <button onClick={handleGenerate} className="text-xs flex items-center gap-1 text-slate-400 hover:text-white bg-slate-700/50 px-3 py-1.5 rounded-lg transition-colors">
-              <RefreshCw size={12} /> 재분석
+            <button onClick={handleGenerate} className="text-xs flex items-center gap-1.5 text-slate-400 hover:text-white bg-slate-800/50 px-4 py-2 rounded-xl transition-colors">
+              <RefreshCw size={14} /> 재분석
             </button>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-8">
             {/* 강점 (초록색 테마) */}
-            <div className="bg-gradient-to-br from-emerald-900/20 to-slate-900/50 border border-emerald-500/20 rounded-3xl p-6 md:p-8 backdrop-blur-md shadow-lg hover:border-emerald-500/40 transition-colors">
-              <h4 className="flex items-center gap-3 text-emerald-400 font-bold text-lg mb-6">
-                <span className="p-2 bg-emerald-500/10 rounded-xl"><TrendingUp size={22} /></span>
+            <div className="bg-gradient-to-br from-emerald-900/30 to-slate-900/50 border border-emerald-500/20 rounded-3xl p-7 md:p-9 backdrop-blur-xl shadow-xl hover:border-emerald-500/40 transition-colors">
+              <h4 className="flex items-center gap-3.5 text-emerald-400 font-extrabold text-xl mb-7">
+                <span className="p-2.5 bg-emerald-500/10 rounded-2xl"><TrendingUp size={24} /></span>
                 학습 강점
               </h4>
-              <ul className="space-y-4">
+              <ul className="space-y-5">
                 {feedback.strengths.map((s, i) => (
-                  <li key={i} className="flex items-start gap-3 text-slate-200 leading-relaxed">
-                    <span className="text-emerald-500 font-bold mt-1">✓</span> {s}
+                  <li key={i} className="flex items-start gap-3.5 text-slate-200 leading-relaxed text-base">
+                    <span className="text-emerald-500 font-extrabold mt-1 text-lg">✓</span> {s}
                   </li>
                 ))}
               </ul>
             </div>
 
             {/* 개선점 (주황색 테마) */}
-            <div className="bg-gradient-to-br from-amber-900/20 to-slate-900/50 border border-amber-500/20 rounded-3xl p-6 md:p-8 backdrop-blur-md shadow-lg hover:border-amber-500/40 transition-colors">
-              <h4 className="flex items-center gap-3 text-amber-400 font-bold text-lg mb-6">
-                <span className="p-2 bg-amber-500/10 rounded-xl"><AlertCircle size={22} /></span>
+            <div className="bg-gradient-to-br from-amber-900/30 to-slate-900/50 border border-amber-500/20 rounded-3xl p-7 md:p-9 backdrop-blur-xl shadow-xl hover:border-amber-500/40 transition-colors">
+              <h4 className="flex items-center gap-3.5 text-amber-400 font-extrabold text-xl mb-7">
+                <span className="p-2.5 bg-amber-500/10 rounded-2xl"><AlertCircle size={24} /></span>
                 개선 포인트
               </h4>
-              <ul className="space-y-4">
+              <ul className="space-y-5">
                 {feedback.improvements.map((s, i) => (
-                  <li key={i} className="flex items-start gap-3 text-slate-200 leading-relaxed">
-                    <span className="text-amber-500 font-bold mt-1">!</span> {s}
+                  <li key={i} className="flex items-start gap-3.5 text-slate-200 leading-relaxed text-base">
+                    <span className="text-amber-500 font-extrabold mt-1 text-lg">!</span> {s}
+                    
                   </li>
                 ))}
               </ul>
@@ -240,19 +232,19 @@ export default function AIFeedback({ sessions }: AIFeedbackProps) {
           </div>
 
           {/* 추천 솔루션 (보라색 테마) */}
-          <div className="bg-gradient-to-br from-purple-900/20 to-indigo-900/10 border border-purple-500/20 rounded-3xl p-6 md:p-8 backdrop-blur-md shadow-lg mt-8 hover:border-purple-500/40 transition-colors">
-            <h4 className="flex items-center gap-3 text-purple-400 font-bold text-xl mb-8">
-              <span className="p-2 bg-purple-500/10 rounded-xl"><Lightbulb size={24} /></span>
+          <div className="bg-gradient-to-br from-teal-900/30 to-indigo-900/20 border border-teal-500/20 rounded-3xl p-7 md:p-9 backdrop-blur-xl shadow-xl mt-10 hover:border-teal-500/40 transition-colors">
+            <h4 className="flex items-center gap-4 text-teal-400 font-extrabold text-2xl mb-10 tracking-tight">
+              <span className="p-3 bg-teal-500/10 rounded-2xl"><Lightbulb size={28} /></span>
               내일을 위한 맞춤 솔루션
             </h4>
-            <div className="grid gap-4">
+            <div className="grid gap-6">
               {feedback.recommendations.map((r, i) => (
-                <div key={i} className="bg-slate-900/40 border border-white/5 rounded-2xl p-6 hover:bg-slate-800/60 transition-colors">
-                  <div className="flex items-center gap-4 mb-3">
-                    <span className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-bold flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.4)]">{i + 1}</span>
-                    <span className="text-white font-bold text-lg tracking-tight">{r.title}</span>
+                <div key={i} className="bg-slate-900/40 border border-white/5 rounded-2xl p-7 hover:bg-slate-800/60 transition-colors flex items-center gap-6">
+                  <span className="w-10 h-10 rounded-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white text-lg font-black flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(20,184,166,0.4)]">{i + 1}</span>
+                  <div className='flex-1'>
+                    <span className="text-white font-black text-xl tracking-tight block mb-1.5">{r.title}</span>
+                    {r.description && <p className="text-slate-400 leading-relaxed text-sm">{r.description}</p>}
                   </div>
-                  {r.description && <p className="text-slate-400 leading-relaxed ml-12">{r.description}</p>}
                 </div>
               ))}
             </div>

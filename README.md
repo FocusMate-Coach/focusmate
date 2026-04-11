@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # FocusMate 🎯
 ### AI 기반 초개인화 학습 패턴 분석 코치
 
@@ -146,3 +147,4 @@ VITE_OPENAI_API_KEY=your_api_key_here
 ## 📄 라이선스
 
 MIT License - 공모전 출품용 프로젝트
+=======

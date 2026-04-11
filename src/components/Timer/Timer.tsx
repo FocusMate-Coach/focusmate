@@ -1,6 +1,6 @@
 // src/components/Timer/Timer.tsx
 import { useState } from 'react';
-import { Play, Pause, Square, RotateCcw, Target, Flame, Trophy } from 'lucide-react';
+import { Play, Pause, Square, RotateCcw, Target, Flame } from 'lucide-react';
 import { useTimer } from '../../hooks/useTimer';
 import FocusRating from '../FocusRating/FocusRating';
 import type { Subject, StudyType, StudySession } from '../../types';
@@ -12,21 +12,33 @@ interface TimerProps {
   onSessionSaved: (session: StudySession) => void;
 }
 
+// 개별 시간(시, 분, 초)을 표시하는 미래형 플립 카드 컴포넌트
+const TimeCard = ({ value, label, isActive }: { value: string, label: string, isActive: boolean }) => (
+  <div className="flex flex-col items-center gap-3">
+    <div className={`relative overflow-hidden rounded-[2rem] bg-slate-900 border transition-all duration-500 w-28 h-36 sm:w-36 sm:h-48 flex items-center justify-center ${isActive ? 'border-focusgreen-500/50 shadow-[0_0_40px_rgba(173,251,16,0.25)]' : 'border-white/5 shadow-2xl'}`}>
+      {/* 플립 시계 중앙 가로선 (물리적인 시계 느낌) */}
+      <div className="absolute top-1/2 left-0 w-full h-[2px] bg-[#020617] z-10 -translate-y-1/2 opacity-80 shadow-sm"></div>
+      
+      {/* 숫자 텍스트 */}
+      <span className={`text-6xl sm:text-8xl font-black tabular-nums tracking-tighter z-0 transition-colors duration-500 ${isActive ? 'text-focusgreen-400 drop-shadow-focus-neon' : 'text-slate-200'}`}>
+        {value}
+      </span>
+      
+      {/* 반사되는 유리 질감 효과 */}
+      <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/10 to-transparent pointer-events-none"></div>
+    </div>
+    <span className={`text-xs sm:text-sm font-black tracking-[0.3em] uppercase ${isActive ? 'text-focusgreen-500/80' : 'text-slate-600'}`}>{label}</span>
+  </div>
+);
+
 export default function Timer({ onSessionSaved }: TimerProps) {
-  // 팀장님의 핵심 타이머 로직 그대로 유지!
+  // 팀장님의 완벽한 코어 로직 100% 유지!
   const { status, elapsed, subject, studyType, startTime, setSubject, setStudyType, start, pause, resume, stop, reset } = useTimer();
   const [showRating, setShowRating] = useState(false);
   const [pendingSession, setPendingSession] = useState<Omit<StudySession, 'focusScore'> | null>(null);
 
-  const formatTime = (totalSeconds: number) => {
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    const s = totalSeconds % 60;
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
-
   const handleStop = () => {
-    if (elapsed < 5) return; // 최소 5초 이상
+    if (elapsed < 5) return;
     stop();
 
     const now = new Date();
@@ -63,144 +75,122 @@ export default function Timer({ onSessionSaved }: TimerProps) {
     reset();
   };
 
+  // 시간을 시간, 분, 초 단위로 분리
+  const h = Math.floor(elapsed / 3600);
+  const m = Math.floor((elapsed % 3600) / 60);
+  const s = elapsed % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+
   const isActive = status === 'running';
 
   return (
-    <div className="flex flex-col items-center justify-center space-y-10 py-10 max-w-2xl mx-auto">
+    <div className="flex flex-col items-center justify-center min-h-[75vh] gap-12 sm:gap-16 max-w-4xl mx-auto py-8">
       
-      {/* 과목 및 학습 유형 선택 (글래스모피즘 디자인 적용) */}
-      <div className="w-full flex gap-4 animate-fade-in-up px-4">
-        <div className="flex-1">
-          <label className="block text-xs text-teal-400/80 mb-2 font-bold uppercase tracking-wider ml-1">과목</label>
-          <select
-            value={subject}
-            onChange={(e) => setSubject(e.target.value as Subject)}
-            disabled={status !== 'idle'}
-            className="w-full bg-slate-900/50 backdrop-blur-md border border-white/10 rounded-2xl px-5 py-3.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50 transition-all cursor-pointer"
-          >
-            {SUBJECTS.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </div>
-        <div className="flex-1">
-          <label className="block text-xs text-teal-400/80 mb-2 font-bold uppercase tracking-wider ml-1">학습 유형</label>
-          <select
-            value={studyType}
-            onChange={(e) => setStudyType(e.target.value as StudyType)}
-            disabled={status !== 'idle'}
-            className="w-full bg-slate-900/50 backdrop-blur-md border border-white/10 rounded-2xl px-5 py-3.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50 transition-all cursor-pointer"
-          >
-            {STUDY_TYPES.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* 상단 상태 뱃지 */}
-      <div className="flex gap-4 animate-fade-in-up">
-        <div className="bg-teal-500/10 border border-teal-500/20 px-4 py-2 rounded-2xl flex items-center gap-2 shadow-lg">
-          <Target className="text-teal-400" size={16} />
-          <span className="text-xs font-bold text-teal-200 uppercase tracking-wider">{subject}</span>
-        </div>
-        <div className="bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-2xl flex items-center gap-2 shadow-lg">
-          <Flame className="text-emerald-400" size={16} />
-          <span className="text-xs font-bold text-emerald-200 uppercase tracking-wider">{studyType}</span>
-        </div>
-      </div>
-
-      {/* 메인 원형 스톱워치 디자인 */}
-      <div className="relative group animate-fade-in-up">
-        {/* 외부 글로우 효과 */}
-        <div className={`absolute inset-0 bg-teal-500/20 rounded-full blur-[60px] transition-opacity duration-1000 ${isActive ? 'opacity-100' : 'opacity-0'}`}></div>
-        
-        <div className="relative w-80 h-80 flex items-center justify-center bg-slate-900/40 backdrop-blur-3xl rounded-full border border-white/5 shadow-2xl">
-          {/* 원형 프로그레스 바 (SVG) */}
-          <svg className="absolute w-full h-full -rotate-90">
-            <circle cx="160" cy="160" r="140" fill="transparent" stroke="rgba(255,255,255,0.03)" strokeWidth="12" />
-            <circle
-              cx="160" cy="160" r="140" fill="transparent"
-              stroke="url(#tealGradient)"
-              strokeWidth="12"
-              strokeDasharray="880"
-              strokeDashoffset={880 - (elapsed % 3600 / 3600) * 880}
-              strokeLinecap="round"
-              className="transition-all duration-1000 ease-linear"
-            />
-            <defs>
-              <linearGradient id="tealGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#2DD4BF" />
-                <stop offset="100%" stopColor="#0EA5E9" />
-              </linearGradient>
-            </defs>
-          </svg>
-
-          {/* 시간 표시 */}
-          <div className="text-center z-10">
-            <div className="text-6xl font-black text-white tracking-tighter font-mono tabular-nums drop-shadow-2xl">
-              {formatTime(elapsed)}
+      {/* 1. 상단: 플로팅 글래스 콤보박스 (과목/유형) */}
+      <div className="w-full flex flex-col sm:flex-row gap-4 sm:gap-6 px-4 animate-fade-in-up">
+        <div className="flex-1 relative group">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-focusgreen-500 to-emerald-500 rounded-3xl blur opacity-0 group-hover:opacity-20 transition duration-500"></div>
+          <div className="relative bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-3xl p-2 flex items-center">
+            <div className="p-3 bg-slate-800 rounded-2xl text-focusgreen-400 mr-3">
+              <Target size={20} />
             </div>
-            <p className="text-slate-500 font-bold text-sm mt-3 tracking-[0.3em] uppercase">
-              {status === 'running' ? 'Deep Work' : status === 'paused' ? 'Paused' : 'Ready'}
-            </p>
+            <select
+              value={subject}
+              onChange={(e) => setSubject(e.target.value as Subject)}
+              disabled={status !== 'idle'}
+              className="flex-1 bg-transparent text-white text-lg font-bold focus:outline-none disabled:opacity-50 appearance-none cursor-pointer"
+            >
+              {SUBJECTS.map((s) => <option key={s} value={s} className="bg-slate-900">{s}</option>)}
+            </select>
           </div>
         </div>
+
+        <div className="flex-1 relative group">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-focusgreen-500 rounded-3xl blur opacity-0 group-hover:opacity-20 transition duration-500"></div>
+          <div className="relative bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-3xl p-2 flex items-center">
+            <div className="p-3 bg-slate-800 rounded-2xl text-emerald-400 mr-3">
+              <Flame size={20} />
+            </div>
+            <select
+              value={studyType}
+              onChange={(e) => setStudyType(e.target.value as StudyType)}
+              disabled={status !== 'idle'}
+              className="flex-1 bg-transparent text-white text-lg font-bold focus:outline-none disabled:opacity-50 appearance-none cursor-pointer"
+            >
+              {STUDY_TYPES.map((t) => <option key={t} value={t} className="bg-slate-900">{t}</option>)}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. 중앙: 파격적인 미래형 플립 클락 */}
+      <div className="flex items-center gap-2 sm:gap-6 animate-fade-in-up mt-4">
+        <TimeCard value={pad(h)} label="Hours" isActive={isActive && h > 0} />
+        <span className={`text-4xl sm:text-6xl font-black pb-8 ${isActive ? 'text-focusgreen-400 animate-pulse' : 'text-slate-700'}`}>:</span>
+        <TimeCard value={pad(m)} label="Minutes" isActive={isActive} />
+        <span className={`text-4xl sm:text-6xl font-black pb-8 ${isActive ? 'text-focusgreen-400 animate-pulse' : 'text-slate-700'}`}>:</span>
+        <TimeCard value={pad(s)} label="Seconds" isActive={isActive} />
       </div>
 
       {/* 최소 시간 안내 */}
-      <div className="h-4">
+      <div className="h-6">
         {status === 'running' && elapsed < 5 && (
-          <p className="text-xs text-slate-500 font-medium animate-pulse">5초 이상 공부해야 세션을 저장할 수 있어요</p>
+          <p className="text-sm font-bold text-focusgreen-500/80 animate-pulse bg-focusgreen-500/10 px-4 py-1.5 rounded-full border border-focusgreen-500/20">
+            데이터 수집을 위해 최소 5초 이상 집중해 주세요
+          </p>
         )}
       </div>
 
-      {/* 컨트롤 버튼 */}
-      <div className="flex items-center gap-8 animate-fade-in-up">
-        {/* 정지 및 저장 버튼 */}
+      {/* 3. 하단: 사이버펑크 스타일 컨트롤 센터 */}
+      <div className="flex items-center gap-6 sm:gap-10 animate-fade-in-up mt-2">
+        {/* 종료 버튼 */}
         {(status === 'running' || status === 'paused') ? (
           <button
             onClick={handleStop}
-            className="p-5 rounded-3xl bg-slate-800/50 border border-white/5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all active:scale-90"
+            className="p-5 sm:p-6 rounded-[2rem] bg-slate-900/80 border border-white/5 text-slate-400 hover:text-white hover:bg-red-500 hover:border-red-500 hover:shadow-[0_0_30px_rgba(239,68,68,0.5)] transition-all duration-300 active:scale-90 group"
             title="종료 및 저장"
           >
-            <Square size={28} fill="currentColor" />
+            <Square size={28} className="group-hover:scale-110 transition-transform" fill="currentColor" />
           </button>
         ) : (
-          <button disabled className="p-5 rounded-3xl bg-slate-800/20 border border-white/5 text-slate-600 opacity-50 cursor-not-allowed">
+          <div className="p-5 sm:p-6 rounded-[2rem] bg-slate-900/40 border border-white/5 text-slate-700 opacity-50">
             <Square size={28} fill="currentColor" />
-          </button>
+          </div>
         )}
 
-        {/* 중앙 메인 재생/일시정지 버튼 */}
+        {/* 메인 액션 버튼 (네온 글로우) */}
         <button
           onClick={status === 'idle' ? start : (isActive ? pause : resume)}
-          className={`p-10 rounded-[40px] transition-all duration-500 active:scale-95 shadow-2xl flex items-center justify-center ${
+          className={`relative group p-8 sm:p-10 rounded-[2.5rem] transition-all duration-500 active:scale-95 flex items-center justify-center ${
             isActive 
-            ? 'bg-slate-800/80 text-white border border-white/10 hover:shadow-white/5' 
-            : 'bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-[0_0_30px_rgba(20,184,166,0.4)] hover:shadow-[0_0_40px_rgba(20,184,166,0.6)]'
+            ? 'bg-slate-900 border border-white/10 text-white hover:bg-slate-800' 
+            : 'bg-focusgreen-500 text-slate-950 shadow-[0_0_40px_rgba(173,251,16,0.5)] hover:shadow-[0_0_60px_rgba(173,251,16,0.7)] hover:bg-focusgreen-400'
           }`}
         >
-          {isActive ? <Pause size={48} fill="currentColor" /> : <Play size={48} className="ml-2" fill="currentColor" />}
+          {isActive ? (
+            <Pause size={56} fill="currentColor" className="drop-shadow-lg" />
+          ) : (
+            <Play size={56} className="ml-3 drop-shadow-lg" fill="currentColor" />
+          )}
         </button>
 
-        {/* 리셋 버튼 */}
+        {/* 초기화 버튼 */}
         {(status === 'running' || status === 'paused') ? (
           <button
             onClick={reset}
-            className="p-5 rounded-3xl bg-slate-800/50 border border-white/5 text-slate-500 hover:text-white hover:bg-slate-700 transition-all active:scale-90"
+            className="p-5 sm:p-6 rounded-[2rem] bg-slate-900/80 border border-white/5 text-slate-400 hover:text-slate-950 hover:bg-slate-200 transition-all duration-300 active:scale-90 group"
             title="초기화"
           >
-            <RotateCcw size={28} />
+            <RotateCcw size={28} className="group-hover:-rotate-180 transition-transform duration-500" />
           </button>
         ) : (
-          <div className="p-5 rounded-3xl bg-slate-800/20 border border-white/5 text-slate-600 opacity-50">
-            <Trophy size={28} />
+          <div className="p-5 sm:p-6 rounded-[2rem] bg-slate-900/40 border border-white/5 text-slate-700 opacity-50">
+            <RotateCcw size={28} />
           </div>
         )}
       </div>
 
-      {/* 집중도 평가 모달 */}
+      {/* 팀장님의 집중도 평가 모달은 그대로 유지! */}
       {showRating && (
         <FocusRating
           subject={subject}

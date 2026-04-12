@@ -50,9 +50,32 @@
 
 ---
 
-## 3. 데이터 모델
+## 3. 디자인 시스템
 
-### 3.1 StudySession (학습 세션)
+### 3.1 컬러 팔레트
+
+| 역할 | 색상 | 코드 |
+|------|------|------|
+| 배경 | 따뜻한 크림 | `#F2EAE0` |
+| 포인트 (퍼플) | 메인 액션, 강조 | `#9B8EC7` |
+| 포인트 (민트) | 차트, 강점 카드 | `#B4D3D9` |
+| 포인트 (연보라) | 테두리, 개선 카드 | `#BDA6CE` |
+
+### 3.2 디자인 원칙
+- **글라스모피즘**: `bg-white/80 backdrop-blur-xl border border-[#BDA6CE]/30`
+- **배경 글로우**: 민트/퍼플 블러 원형 (`blur-[100px]`, `animate-float`)
+- **애니메이션**: `animate-fade-in-up` (페이지 진입), `animate-float` (배경)
+- **라운드**: 카드 `rounded-[2rem]~[2.5rem]`, 버튼 `rounded-full~rounded-2xl`
+
+### 3.3 반응형 네비게이션
+- **모바일**: 하단 고정 탭바 (`fixed bottom-0`)
+- **PC**: 상단 중앙 pill 형태 네비게이션 (`fixed top-6`, `rounded-full`)
+
+---
+
+## 4. 데이터 모델
+
+### 4.1 StudySession (학습 세션)
 ```typescript
 interface StudySession {
   id: string;           // UUID
@@ -68,31 +91,31 @@ interface StudySession {
 }
 ```
 
-### 3.2 Subject (과목 Enum)
+### 4.2 Subject (과목)
 ```typescript
 type Subject = '국어' | '영어' | '수학' | '과학' | '사회' | '기타';
 ```
 
-### 3.3 StudyType (학습 유형 Enum)
+### 4.3 StudyType (학습 유형)
 ```typescript
 type StudyType = '개념학습' | '문제풀이' | '복습' | '인강시청' | '오답노트';
 ```
 
-### 3.4 HourlyData (시간대별 집계)
+### 4.4 HourlyData (시간대별 집계)
 ```typescript
 interface HourlyData {
-  hour: number;         // 0~23
-  avgFocus: number;     // 평균 집중도
-  totalDuration: number; // 총 공부 시간(분)
-  sessionCount: number; // 세션 수
+  hour: number;
+  avgFocus: number;
+  totalDuration: number;
+  sessionCount: number;
 }
 ```
 
-### 3.5 SubjectData (과목별 집계)
+### 4.5 SubjectData (과목별 집계)
 ```typescript
 interface SubjectData {
   subject: string;
-  totalDuration: number; // 분
+  totalMinutes: number;
   avgFocus: number;
   sessionCount: number;
 }
@@ -100,47 +123,46 @@ interface SubjectData {
 
 ---
 
-## 4. 컴포넌트 설계
+## 5. 컴포넌트 설계
 
-### 4.1 컴포넌트 트리
+### 5.1 컴포넌트 트리
 ```
 App
-├── Layout
-│   ├── Sidebar (네비게이션)
+├── Layout (반응형 네비게이션)
+│   ├── 상단 pill nav (PC)
+│   ├── 하단 탭바 (모바일)
 │   └── Main Content
 │       ├── Route "/" → TimerPage
-│       │   ├── SubjectSelector
-│       │   ├── Timer
-│       │   └── TodaySessionList
+│       │   ├── Timer (대형 시계 디스플레이)
+│       │   │   └── Dock (과목/유형 선택 + 컨트롤 버튼)
+│       │   └── FocusRating (모달)
 │       ├── Route "/dashboard" → DashboardPage
-│       │   ├── SummaryCards
-│       │   ├── HourlyFocusChart
-│       │   ├── SubjectChart
-│       │   ├── WeeklyTrendChart
-│       │   └── SessionTimeline
+│       │   ├── SummaryCards (4종)
+│       │   ├── HourlyFocusChart (바 차트)
+│       │   └── WeeklyTrendChart (라인 차트)
 │       └── Route "/feedback" → AIFeedbackPage
-│           ├── DataSummary
 │           ├── GenerateButton
+│           ├── LoadingSpinner
 │           └── FeedbackResult
-│               ├── StrengthCard
-│               ├── WeaknessCard
-│               └── RecommendationCards
+│               ├── StrengthCard (민트)
+│               ├── ImprovementCard (연보라)
+│               └── RecommendationCards (3개)
 ```
 
-### 4.2 주요 컴포넌트 책임
+### 5.2 주요 컴포넌트 책임
 
 | 컴포넌트 | 책임 | Props |
 |---------|------|-------|
-| `Timer` | 스톱워치 로직, 세션 저장 트리거 | `onSessionEnd` |
-| `FocusRatingModal` | 집중도 입력 UI, 저장 | `session`, `onSave`, `onClose` |
-| `Dashboard` | 데이터 집계 및 차트 조합 | `sessions` |
+| `Timer` | 스톱워치 로직, 세션 저장 트리거 | `onSessionSaved` |
+| `FocusRating` | 집중도 입력 UI, 저장 | `subject`, `studyType`, `duration`, `onSave`, `onCancel` |
+| `Dashboard` | 데이터 집계 및 차트 조합 | `sessions`, `onClearData` |
 | `AIFeedback` | OpenAI API 호출, 결과 렌더링 | `sessions` |
 
 ---
 
-## 5. 주요 로직 설계
+## 6. 주요 로직 설계
 
-### 5.1 타이머 로직 (useTimer Hook)
+### 6.1 타이머 로직 (useTimer Hook)
 ```
 상태: idle → running → paused → stopped
                 ↑__________|
@@ -148,9 +170,10 @@ App
 - running: setInterval(1000ms)로 elapsed 증가
 - paused: interval 클리어, elapsed 유지
 - stopped: interval 클리어, onStop 콜백 호출
+- 최소 5초 미만 정지 시 세션 저장 안 함
 ```
 
-### 5.2 데이터 분석 로직
+### 6.2 데이터 분석 로직
 
 ```typescript
 // 시간대별 평균 집중도 계산
@@ -162,38 +185,49 @@ function calcSubjectData(sessions: StudySession[]): SubjectData[]
 // 7일 추이 계산 (일별 평균 집중도)
 function calcWeeklyTrend(sessions: StudySession[]): DailyData[]
 
-// 효율 점수 계산 (집중도 × 시간 가중치)
-function calcEfficiencyScore(session: StudySession): number
+// 전체 요약 (최고 집중 시간대, 효율 최고 과목 포함)
+function calcSummary(sessions: StudySession[]): SummaryData
 ```
 
-### 5.3 AI 피드백 프롬프트 구조
+### 6.3 차트 색상 로직 (집중도 기반)
+```typescript
+function focusColor(score: number): string {
+  if (score >= 4.5) return 'url(#colorHigh)';  // 민트 그라데이션
+  if (score >= 3.5) return 'url(#colorMid)';   // 퍼플 그라데이션
+  if (score >= 2.5) return '#E4DFB5';          // 노랑
+  return '#FBE8CE';                             // 크림
+}
+```
+
+### 6.4 AI 피드백 프롬프트 구조
 
 ```
 [시스템 프롬프트]
 당신은 학습 패턴 분석 전문 AI 코치입니다.
-학생의 학습 데이터를 분석하여 구체적이고 실행 가능한 피드백을 제공합니다.
 
 [유저 메시지]
-다음은 [학생명]의 최근 7일 학습 데이터입니다:
+▶ 총 학습 시간 / 총 세션 수 / 평균 집중도
+▶ 집중도 상위 시간대 (상위 3개)
+▶ 집중도 하위 시간대 (하위 2개)
+▶ 과목별 학습 시간 및 평균 집중도
+▶ 학습 유형별 평균 집중도
 
-▶ 총 학습 시간: N시간 M분
-▶ 평균 집중도: X.X / 5.0
-▶ 최고 집중 시간대: HH시 ~ HH시 (평균 X.X점)
-▶ 최저 집중 시간대: HH시 ~ HH시 (평균 X.X점)
-▶ 가장 효율적인 과목: [과목] (평균 X.X점)
-▶ 학습 유형별 집중도: [유형: X.X점, ...]
+[출력 형식]
+## 학습 강점
+- [강점 1], [강점 2]
 
-위 데이터를 바탕으로 다음 형식으로 피드백을 제공해 주세요:
-1. 학습 강점 (2가지)
-2. 개선이 필요한 부분 (1가지)
-3. 구체적 행동 추천 (3가지, 각 시간대/방법 명시)
+## 개선 포인트
+- [개선점 1]
 
-응답은 한국어로, 학생이 바로 실천할 수 있도록 친근하고 구체적으로 작성해 주세요.
+## 맞춤 학습 추천
+1. [제목]: [방법]
+2. [제목]: [방법]
+3. [제목]: [방법]
 ```
 
 ---
 
-## 6. 로컬 스토리지 설계
+## 7. 로컬 스토리지 설계
 
 | 키 | 타입 | 설명 |
 |----|------|------|
@@ -211,7 +245,7 @@ const sessions = raw ? JSON.parse(raw) : [];
 
 ---
 
-## 7. API 설계 (OpenAI API 연동)
+## 8. API 설계 (OpenAI API 연동)
 
 ### 요청
 ```typescript
@@ -237,7 +271,7 @@ const feedbackText = response.choices[0].message.content ?? '';
 
 ---
 
-## 8. Mock Data 설계
+## 9. Mock Data 설계
 
 공모전 시연을 위해 실제 사용 데이터처럼 보이는 7일치 가상 데이터를 생성합니다.
 
@@ -251,20 +285,30 @@ const feedbackText = response.choices[0].message.content ?? '';
 
 ---
 
-## 9. 상태 관리 전략
+## 10. 상태 관리 전략
 
 별도의 상태 관리 라이브러리(Redux, Zustand) 없이 React 기본 훅만 사용합니다.
 
 - `useState`: 컴포넌트 로컬 상태 (타이머, 모달 표시)
 - `useEffect`: 타이머 interval, 데이터 로드
-- Props Drilling: 최대 2단계까지만 허용
+- `useMemo`: 차트 데이터 계산 (sessions 변경 시만 재계산)
 - 전역 상태(sessions): App 컴포넌트에서 관리 후 Props로 전달
+- Props Drilling: 최대 2단계까지만 허용
 
 ---
 
-## 10. 성능 고려사항
+## 11. 브랜치 전략
 
-- `useMemo`: 차트 데이터 계산 (sessions 변경 시만 재계산)
-- `useCallback`: 이벤트 핸들러 메모이제이션
-- Mock Data: 앱 로드 시 한 번만 주입 (중복 방지 플래그)
-- Chart Lazy Loading: 대시보드 탭 진입 시에만 렌더링
+```
+main                ← 최종 배포
+└── develop         ← 통합 테스트
+    ├── feature/input       # Timer.tsx, FocusRating.tsx, useTimer.ts, storage.ts
+    ├── feature/plan        # 신규 개발 (공부 계획 생성)
+    ├── feature/analysis    # Dashboard.tsx, dataAnalysis.ts, mockData.ts
+    └── feature/ai-feedback # AIFeedback.tsx
+```
+
+**공통 파일 (충돌 주의)**
+- `App.tsx` — 라우팅 추가 시 수정 필요
+- `Layout.tsx` — 네비게이션 메뉴 변경 시
+- `types/index.ts` — 새 타입 추가 시

@@ -40,10 +40,6 @@ function DashboardPage({ sessions, onClearData }: { sessions: StudySession[]; on
 function FeedbackPage({ sessions }: { sessions: StudySession[] }) {
   return (
     <div>
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-white">AI 피드백</h2>
-        <p className="text-slate-400 text-sm mt-1">AI가 나만의 맞춤형 학습 방법을 추천해 드려요</p>
-      </div>
       <AIFeedback sessions={sessions} />
     </div>
   );

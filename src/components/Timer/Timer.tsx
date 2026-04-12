@@ -1,21 +1,34 @@
 // src/components/Timer/Timer.tsx
-import { useState } from 'react';
-import { Play, Pause, Square, Target, ChevronDown } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Play, Pause, Square, Target, ChevronDown, Check } from 'lucide-react';
 import { useTimer } from '../../hooks/useTimer';
 import FocusRating from '../FocusRating/FocusRating';
-import type { Subject, StudyType, StudySession } from '../../types';
+import type { StudyType, StudySession } from '../../types';
 
-const SUBJECTS: Subject[] = ['국어', '영어', '수학', '과학', '사회', '기타'];
-const STUDY_TYPES: StudyType[] = ['개념학습', '문제풀이', '복습', '인강시청', '오답노트'];
+// 💡 [수정] '기타' 항목이 배열 맨 끝에 추가되었습니다.
+const STUDY_TYPES = ['개념학습', '문제풀이', '복습', '인강시청', '오답노트', '기타'] as StudyType[];
 
 interface TimerProps {
   onSessionSaved: (session: StudySession) => void;
 }
 
 export default function Timer({ onSessionSaved }: TimerProps) {
-  const { status, elapsed, subject, studyType, startTime, setSubject, setStudyType, start, pause, resume, stop, reset } = useTimer();
+  const { status, elapsed, subject, studyType, startTime, setStudyType, start, pause, resume, stop, reset } = useTimer();
   const [showRating, setShowRating] = useState(false);
   const [pendingSession, setPendingSession] = useState<Omit<StudySession, 'focusScore'> | null>(null);
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const formatTime = (totalSeconds: number) => {
     const h = Math.floor(totalSeconds / 3600);
@@ -38,7 +51,10 @@ export default function Timer({ onSessionSaved }: TimerProps) {
       startTime,
       endTime: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
       hour: parseInt(startTime.split(':')[0], 10) || 0,
-      subject, studyType, duration: elapsed, createdAt: Date.now(),
+      subject: subject || '기타',
+      studyType,
+      duration: elapsed,
+      createdAt: Date.now(),
     });
     setShowRating(true);
   };
@@ -56,13 +72,13 @@ export default function Timer({ onSessionSaved }: TimerProps) {
   const isActive = status === 'running';
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full min-h-[400px] animate-fade-in-up">
+    <div className="flex flex-col items-center justify-center w-full h-full min-h-[400px] animate-fade-in-up selection:bg-[#BDA6CE]/20">
       
       <div className="flex-1"></div>
 
-      {/* 2. 중앙: 딥 퍼플 색상의 반응형 타이머 텍스트 */}
+      {/* 중앙: 타이머 텍스트 */}
       <div className="flex flex-col items-center justify-center w-full z-10 px-4">
-        <div className={`text-[18vw] sm:text-8xl md:text-[9rem] lg:text-[11rem] font-black leading-none tracking-tighter tabular-nums transition-colors duration-1000 drop-shadow-sm flex items-baseline justify-center ${isActive ? 'text-palette-3' : 'text-palette-2/60'}`}>
+        <div className={`text-[18vw] sm:text-8xl md:text-[9rem] lg:text-[11rem] font-black leading-none tracking-tighter tabular-nums transition-colors duration-1000 drop-shadow-sm flex items-baseline justify-center ${isActive ? 'text-[#9B8EC7]' : 'text-[#BDA6CE]/60'}`}>
           <span>{time.h}</span>
           <span className={`mx-1 sm:mx-2 ${isActive ? 'opacity-50 animate-pulse' : 'opacity-40'}`}>:</span>
           <span>{time.m}</span>
@@ -71,14 +87,14 @@ export default function Timer({ onSessionSaved }: TimerProps) {
           </span>
         </div>
         
-        <p className={`mt-6 tracking-[0.3em] sm:tracking-[0.4em] text-[10px] sm:text-sm uppercase font-extrabold transition-colors duration-1000 px-6 py-2 rounded-full ${isActive ? 'bg-palette-2/20 text-palette-3' : 'bg-palette-0 text-palette-2'}`}>
+        <p className={`mt-6 tracking-[0.3em] sm:tracking-[0.4em] text-[10px] sm:text-sm uppercase font-extrabold transition-colors duration-1000 px-6 py-2 rounded-full ${isActive ? 'bg-[#BDA6CE]/20 text-[#9B8EC7]' : 'bg-[#F2EAE0] text-[#BDA6CE]'}`}>
           {status === 'running' ? 'Deep Work in Progress' : 'Ready to Focus'}
         </p>
       </div>
 
-      {/* 3. 하단 여백 및 독(Dock) 래퍼 */}
+      {/* 하단 독(Dock) 래퍼 */}
       <div className="flex-1 flex flex-col justify-end items-center w-full mt-10 sm:mt-16 pb-8 z-40">
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-3 relative">
           
           <div className="h-4">
             {status === 'running' && elapsed < 5 && (
@@ -89,29 +105,47 @@ export default function Timer({ onSessionSaved }: TimerProps) {
           </div>
 
           {/* 독(Dock) 컨테이너 */}
-          <div className="bg-white/80 backdrop-blur-xl border border-palette-2/40 rounded-[2rem] sm:rounded-[2.5rem] p-2.5 sm:p-3 flex flex-wrap sm:flex-nowrap items-center justify-center gap-3 sm:gap-4 shadow-soft transition-all duration-500 hover:shadow-lg hover:bg-white max-w-[95vw]">
+          <div className="bg-white/80 backdrop-blur-xl border border-[#BDA6CE]/40 rounded-[2rem] sm:rounded-[2.5rem] p-2.5 sm:p-3 flex items-center justify-center gap-3 sm:gap-4 shadow-sm transition-all duration-500 hover:shadow-md hover:bg-white max-w-[95vw]">
             
-            {/* 설정: 과목 및 유형 (크림색 배경) */}
-            <div className="flex items-center bg-palette-0/80 rounded-[1.5rem] sm:rounded-[2rem] p-2 pl-3 sm:pl-4 pr-2 sm:pr-3 border border-palette-2/30 gap-2 sm:gap-3">
-              <Target size={16} className="text-palette-3 hidden xs:block" />
-              <select 
-                value={subject || ''} 
-                onChange={(e) => setSubject(e.target.value as Subject)} 
-                disabled={status !== 'idle'} 
-                className="bg-transparent text-slate-700 text-xs sm:text-sm font-bold focus:outline-none appearance-none cursor-pointer max-w-[70px] sm:max-w-none text-center sm:text-left disabled:opacity-50"
+            {/* 커스텀 드롭다운 트리거 버튼 */}
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => status === 'idle' && setIsMenuOpen(!isMenuOpen)}
+                disabled={status !== 'idle'}
+                className={`flex items-center bg-[#F2EAE0]/80 rounded-[1.5rem] sm:rounded-[2rem] p-2.5 px-4 sm:px-5 border transition-all duration-300 gap-2 sm:gap-3 ${status === 'idle' ? 'border-[#BDA6CE]/40 hover:bg-[#F2EAE0]' : 'border-transparent opacity-60'}`}
               >
-                {SUBJECTS.map((s) => <option key={s} value={s} className="bg-white">{s}</option>)}
-              </select>
-              <span className="text-palette-2">|</span>
-              <select 
-                value={studyType || ''} 
-                onChange={(e) => setStudyType(e.target.value as StudyType)} 
-                disabled={status !== 'idle'} 
-                className="bg-transparent text-slate-700 text-xs sm:text-sm font-bold focus:outline-none appearance-none cursor-pointer max-w-[80px] sm:max-w-none text-center sm:text-left disabled:opacity-50"
-              >
-                {STUDY_TYPES.map((t) => <option key={t} value={t} className="bg-white">{t}</option>)}
-              </select>
-              <ChevronDown size={14} className="text-palette-3/70 ml-0.5 sm:ml-1" />
+                <Target size={16} className="text-[#9B8EC7] hidden xs:block" />
+                <span className="text-slate-800 text-sm sm:text-base font-extrabold">
+                  {studyType || '분류 선택'}
+                </span>
+                <ChevronDown size={14} className={`transition-transform duration-300 ml-0.5 sm:ml-1 ${isMenuOpen ? 'rotate-180' : ''} ${status === 'idle' ? 'text-[#9B8EC7]/70' : 'text-slate-400'}`} />
+              </button>
+
+              {/* 커스텀 드롭다운 메뉴 */}
+              {isMenuOpen && status === 'idle' && (
+                <div className="absolute bottom-[calc(100%+10px)] left-0 w-full min-w-[140px] bg-white/90 backdrop-blur-xl border border-[#BDA6CE]/30 rounded-3xl p-3 shadow-2xl z-[100] animate-fade-in-down origin-bottom">
+                  <p className="text-[11px] font-bold text-slate-400 px-3 pb-2 tracking-widest uppercase">학습 목표</p>
+                  <div className="flex flex-col gap-1.5">
+                    {STUDY_TYPES.map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => {
+                          setStudyType(t);
+                          setIsMenuOpen(false);
+                        }}
+                        className={`group flex items-center justify-between gap-3 w-full p-3 px-4 rounded-xl text-sm transition-colors duration-200 ${
+                          studyType === t
+                            ? 'bg-[#9B8EC7] text-white font-black'
+                            : 'text-slate-700 font-bold hover:bg-[#BDA6CE]/20 hover:text-[#9B8EC7]'
+                        }`}
+                      >
+                        <span>{t}</span>
+                        {studyType === t && <Check size={16} className="text-white shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 메인 컨트롤 버튼들 */}
@@ -120,8 +154,8 @@ export default function Timer({ onSessionSaved }: TimerProps) {
                 onClick={status === 'idle' ? start : (isActive ? pause : resume)}
                 className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all duration-300 active:scale-90 shadow-sm ${
                   isActive 
-                  ? 'bg-palette-1/30 text-palette-3 border border-palette-1/50 hover:bg-palette-1/50' 
-                  : 'bg-palette-3 text-white hover:scale-105 shadow-[0_0_20px_rgba(155,142,199,0.4)] hover:bg-[#8A7CB3]'
+                  ? 'bg-[#B4D3D9]/30 text-[#9B8EC7] border border-[#B4D3D9]/50 hover:bg-[#B4D3D9]/50' 
+                  : 'bg-[#9B8EC7] text-white hover:scale-105 shadow-[0_0_20px_rgba(155,142,199,0.4)] hover:bg-[#8A7CB3]'
                 }`}
               >
                 {isActive ? <Pause size={20} className="sm:w-6 sm:h-6" fill="currentColor" /> : <Play size={20} className="ml-1 sm:w-6 sm:h-6" fill="currentColor" />}
@@ -138,7 +172,7 @@ export default function Timer({ onSessionSaved }: TimerProps) {
       </div>
 
       {showRating && (
-        <FocusRating subject={subject} studyType={studyType} duration={elapsed} onSave={handleRatingSave} onCancel={handleRatingCancel} />
+        <FocusRating subject={subject || '기타'} studyType={studyType} duration={elapsed} onSave={handleRatingSave} onCancel={handleRatingCancel} />
       )}
     </div>
   );

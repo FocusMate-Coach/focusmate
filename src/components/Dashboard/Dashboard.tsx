@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, CartesianGrid
 } from 'recharts';
-import { Clock, Zap, BookOpen, TrendingUp, Trash2 } from 'lucide-react';
+import { Clock, Zap, TrendingUp, Trash2, Calendar } from 'lucide-react'; // 💡 BookOpen을 빼고 Calendar 추가
 import type { StudySession } from '../../types';
 import { calcHourlyData, calcWeeklyTrend, calcSummary, formatHour } from '../../utils/dataAnalysis';
 
@@ -13,7 +13,7 @@ interface DashboardProps {
   onClearData: () => void;
 }
 
-// 🎨 수정: 두 번째 사진의 파스텔 퍼플(#BDA6CE) & 민트(#B4D3D9) 팔레트 복구
+// 🎨 파스텔 퍼플(#BDA6CE) & 민트(#B4D3D9) 팔레트
 function focusColor(score: number): string {
   if (score >= 4.5) return 'url(#colorHigh)';       
   if (score >= 3.5) return 'url(#colorMid)';        
@@ -56,6 +56,17 @@ export default function Dashboard({ sessions, onClearData }: DashboardProps) {
   const hourlyData = useMemo(() => calcHourlyData(sessions).filter(h => h.sessionCount > 0 || h.hour % 3 === 0), [sessions]);
   const weeklyData = useMemo(() => calcWeeklyTrend(sessions), [sessions]);
 
+  // 💡 금일 학습 시간 계산 로직 추가
+  const todayMinutes = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD 형식
+    const todaySessions = sessions.filter(s => s.date === todayStr);
+    const todaySeconds = todaySessions.reduce((acc, s) => acc + s.duration, 0);
+    return {
+      minutes: Math.floor(todaySeconds / 60),
+      count: todaySessions.length
+    };
+  }, [sessions]);
+
   const focusBarData = useMemo(
     () => hourlyData.map(h => ({
       ...h,
@@ -77,12 +88,32 @@ export default function Dashboard({ sessions, onClearData }: DashboardProps) {
 
   return (
     <div className="space-y-6 lg:space-y-8 animate-fade-in-up">
-      {/* 요약 카드 */}
+      {/* 💡 요약 카드: 요청하신 순서대로 재배치 및 '금일 학습 시간' 추가 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
-        <SummaryCard icon={<Clock size={18} />} label="총 학습 시간" value={summary.totalMinutes >= 60 ? `${Math.floor(summary.totalMinutes / 60)}h ${summary.totalMinutes % 60}m` : `${summary.totalMinutes}m`} sub={`총 ${sessions.length}개 세션`} />
-        <SummaryCard icon={<Zap size={18} />} label="평균 집중도" value={`${summary.avgFocus}`} sub="5.0 만점 기준" />
-        <SummaryCard icon={<TrendingUp size={18} />} label="최고 집중 시간대" value={summary.topHour >= 0 ? formatHour(summary.topHour) : '-'} sub="가장 효율이 높은 시간" />
-        <SummaryCard icon={<BookOpen size={18} />} label="효율 최고 과목" value={summary.bestSubject} sub={summary.bestStudyType} />
+        <SummaryCard 
+          icon={<Clock size={18} />} 
+          label="금일 학습 시간" 
+          value={todayMinutes.minutes >= 60 ? `${Math.floor(todayMinutes.minutes / 60)}h ${todayMinutes.minutes % 60}m` : `${todayMinutes.minutes}m`} 
+          sub={`오늘 ${todayMinutes.count}개 세션`} 
+        />
+        <SummaryCard 
+          icon={<Calendar size={18} />} 
+          label="총 학습 시간" 
+          value={summary.totalMinutes >= 60 ? `${Math.floor(summary.totalMinutes / 60)}h ${summary.totalMinutes % 60}m` : `${summary.totalMinutes}m`} 
+          sub={`총 ${sessions.length}개 세션`} 
+        />
+        <SummaryCard 
+          icon={<Zap size={18} />} 
+          label="평균 집중도" 
+          value={`${summary.avgFocus}`} 
+          sub="5.0 만점 기준" 
+        />
+        <SummaryCard 
+          icon={<TrendingUp size={18} />} 
+          label="최고 집중 시간대" 
+          value={summary.topHour >= 0 ? formatHour(summary.topHour) : '-'} 
+          sub="가장 효율이 높은 시간" 
+        />
       </div>
 
       <svg style={{ height: 0, width: 0, position: 'absolute' }}>

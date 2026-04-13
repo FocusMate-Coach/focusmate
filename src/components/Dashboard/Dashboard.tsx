@@ -1,24 +1,39 @@
 // src/components/Dashboard/Dashboard.tsx
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, CartesianGrid
 } from 'recharts';
-import { Clock, Zap, TrendingUp, Trash2, Calendar } from 'lucide-react'; // 💡 BookOpen을 빼고 Calendar 추가
+import { Clock, Zap, TrendingUp, Trash2, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { StudySession } from '../../types';
-import { calcHourlyData, calcWeeklyTrend, calcSummary, formatHour } from '../../utils/dataAnalysis';
+import { calcHourlyData, calcWeeklyTrend, calcSummary, calcMonthlyCalendar, formatHour } from '../../utils/dataAnalysis';
 
 interface DashboardProps {
   sessions: StudySession[];
   onClearData: () => void;
 }
 
-// 🎨 파스텔 퍼플(#BDA6CE) & 민트(#B4D3D9) 팔레트
 function focusColor(score: number): string {
-  if (score >= 4.5) return 'url(#colorHigh)';       
-  if (score >= 3.5) return 'url(#colorMid)';        
-  if (score >= 2.5) return '#E4DFB5';   
-  return '#FBE8CE';                    
+  if (score >= 4.5) return 'url(#colorHigh)';
+  if (score >= 3.5) return 'url(#colorMid)';
+  if (score >= 2.5) return '#E4DFB5';
+  return '#FBE8CE';
+}
+
+function calendarBg(minutes: number): string {
+  if (minutes === 0) return 'transparent';
+  if (minutes < 30)  return 'rgba(189,166,206,0.15)';
+  if (minutes < 60)  return 'rgba(189,166,206,0.30)';
+  if (minutes < 120) return 'rgba(189,166,206,0.50)';
+  if (minutes < 180) return 'rgba(189,166,206,0.70)';
+  return 'rgba(155,142,199,0.85)';
+}
+
+function formatStudyTime(minutes: number): string {
+  if (minutes === 0) return '';
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return h + ':' + String(m).padStart(2, '0');
 }
 
 function SummaryCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
@@ -51,28 +66,105 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
   return null;
 };
 
+const WEEK_DAYS = ['월', '화', '수', '목', '금', '토', '일'];
+const MONTH_NAMES = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+function StudyCalendar({ sessions }: { sessions: StudySession[] }) {
+  const today = new Date();
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth() + 1);
+
+  const calendarData = useMemo(
+    () => calcMonthlyCalendar(sessions, year, month),
+    [sessions, year, month]
+  );
+
+  const firstDayOffset = (new Date(year, month - 1, 1).getDay() + 6) % 7;
+
+  const handlePrev = () => {
+    if (month === 1) { setYear(y => y - 1); setMonth(12); }
+    else setMonth(m => m - 1);
+  };
+  const handleNext = () => {
+    if (month === 12) { setYear(y => y + 1); setMonth(1); }
+    else setMonth(m => m + 1);
+  };
+
+  return (
+    <div className="bg-white/80 backdrop-blur-xl border border-[#BDA6CE]/30 rounded-3xl p-5 lg:p-9 shadow-sm hover:shadow-md transition-all">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-slate-800 font-extrabold flex items-center gap-3 text-base lg:text-lg">
+          <span className="p-2 lg:p-2.5 bg-[#BDA6CE]/20 rounded-xl text-[#BDA6CE]">
+            <Calendar size={20} />
+          </span>
+          월별 학습 캘린더
+        </h3>
+        <div className="flex items-center gap-3">
+          <button onClick={handlePrev} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#BDA6CE]/20 text-slate-500 hover:text-[#9B8EC7] transition-colors">
+            <ChevronLeft size={18} />
+          </button>
+          <span className="text-sm font-black text-slate-700 min-w-[70px] text-center">
+            {year}년 {MONTH_NAMES[month - 1]}
+          </span>
+          <button onClick={handleNext} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#BDA6CE]/20 text-slate-500 hover:text-[#9B8EC7] transition-colors">
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      </div>
+      <div className="grid grid-cols-7 mb-2">
+        {WEEK_DAYS.map(d => (
+          <div key={d} className="text-center text-[10px] lg:text-xs font-black text-slate-400 py-1">{d}</div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {Array.from({ length: firstDayOffset }).map((_, i) => (
+          <div key={'e'+i} />
+        ))}
+        {calendarData.map(({ day, totalMinutes }) => {
+          const isToday = year === today.getFullYear() && month === today.getMonth() + 1 && day === today.getDate();
+          return (
+            <div
+              key={day}
+              style={{ backgroundColor: calendarBg(totalMinutes) }}
+              className={'rounded-xl p-1 lg:p-1.5 flex flex-col items-center justify-center min-h-[44px] lg:min-h-[52px] transition-all' + (isToday ? ' ring-2 ring-[#9B8EC7]' : '')}
+            >
+              <span className={'text-[10px] lg:text-xs font-bold ' + (totalMinutes > 0 ? 'text-slate-700' : 'text-slate-400')}>
+                {day}
+              </span>
+              {totalMinutes > 0 && (
+                <span className="text-[9px] lg:text-[10px] font-black text-[#9B8EC7] mt-0.5 tabular-nums">
+                  {formatStudyTime(totalMinutes)}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex items-center gap-2 mt-4 justify-end">
+        <span className="text-[10px] text-slate-400 font-medium">적음</span>
+        {['rgba(189,166,206,0.15)','rgba(189,166,206,0.30)','rgba(189,166,206,0.50)','rgba(189,166,206,0.70)','rgba(155,142,199,0.85)'].map((bg, i) => (
+          <div key={i} className="w-4 h-4 rounded" style={{ backgroundColor: bg }} />
+        ))}
+        <span className="text-[10px] text-slate-400 font-medium">많음</span>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard({ sessions, onClearData }: DashboardProps) {
   const summary = useMemo(() => calcSummary(sessions), [sessions]);
   const hourlyData = useMemo(() => calcHourlyData(sessions).filter(h => h.sessionCount > 0 || h.hour % 3 === 0), [sessions]);
   const weeklyData = useMemo(() => calcWeeklyTrend(sessions), [sessions]);
 
-  // 💡 금일 학습 시간 계산 로직 추가
   const todayMinutes = useMemo(() => {
-    const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD 형식
+    const todayStr = new Date().toISOString().split('T')[0];
     const todaySessions = sessions.filter(s => s.date === todayStr);
     const todaySeconds = todaySessions.reduce((acc, s) => acc + s.duration, 0);
-    return {
-      minutes: Math.floor(todaySeconds / 60),
-      count: todaySessions.length
-    };
+    return { minutes: Math.floor(todaySeconds / 60), count: todaySessions.length };
   }, [sessions]);
 
   const focusBarData = useMemo(
-    () => hourlyData.map(h => ({
-      ...h,
-      label: `${h.hour}시`,
-      fill: focusColor(h.avgFocus),
-    })),
+    () => hourlyData.map(h => ({ ...h, label: h.hour + '시', fill: focusColor(h.avgFocus) })),
     [hourlyData]
   );
 
@@ -88,32 +180,11 @@ export default function Dashboard({ sessions, onClearData }: DashboardProps) {
 
   return (
     <div className="space-y-6 lg:space-y-8 animate-fade-in-up">
-      {/* 💡 요약 카드: 요청하신 순서대로 재배치 및 '금일 학습 시간' 추가 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
-        <SummaryCard 
-          icon={<Clock size={18} />} 
-          label="금일 학습 시간" 
-          value={todayMinutes.minutes >= 60 ? `${Math.floor(todayMinutes.minutes / 60)}h ${todayMinutes.minutes % 60}m` : `${todayMinutes.minutes}m`} 
-          sub={`오늘 ${todayMinutes.count}개 세션`} 
-        />
-        <SummaryCard 
-          icon={<Calendar size={18} />} 
-          label="총 학습 시간" 
-          value={summary.totalMinutes >= 60 ? `${Math.floor(summary.totalMinutes / 60)}h ${summary.totalMinutes % 60}m` : `${summary.totalMinutes}m`} 
-          sub={`총 ${sessions.length}개 세션`} 
-        />
-        <SummaryCard 
-          icon={<Zap size={18} />} 
-          label="평균 집중도" 
-          value={`${summary.avgFocus}`} 
-          sub="5.0 만점 기준" 
-        />
-        <SummaryCard 
-          icon={<TrendingUp size={18} />} 
-          label="최고 집중 시간대" 
-          value={summary.topHour >= 0 ? formatHour(summary.topHour) : '-'} 
-          sub="가장 효율이 높은 시간" 
-        />
+        <SummaryCard icon={<Clock size={18} />} label="금일 학습 시간" value={todayMinutes.minutes >= 60 ? Math.floor(todayMinutes.minutes/60)+'h '+(todayMinutes.minutes%60)+'m' : todayMinutes.minutes+'m'} sub={'오늘 '+todayMinutes.count+'개 세션'} />
+        <SummaryCard icon={<Calendar size={18} />} label="총 학습 시간" value={summary.totalMinutes >= 60 ? Math.floor(summary.totalMinutes/60)+'h '+(summary.totalMinutes%60)+'m' : summary.totalMinutes+'m'} sub={'총 '+sessions.length+'개 세션'} />
+        <SummaryCard icon={<Zap size={18} />} label="평균 집중도" value={''+summary.avgFocus} sub="5.0 만점 기준" />
+        <SummaryCard icon={<TrendingUp size={18} />} label="최고 집중 시간대" value={summary.topHour >= 0 ? formatHour(summary.topHour) : '-'} sub="가장 효율이 높은 시간" />
       </div>
 
       <svg style={{ height: 0, width: 0, position: 'absolute' }}>
@@ -130,10 +201,9 @@ export default function Dashboard({ sessions, onClearData }: DashboardProps) {
       </svg>
 
       <div className="grid lg:grid-cols-2 gap-4 lg:gap-8">
-        {/* 시간대별 집중도 */}
         <div className="bg-white/80 backdrop-blur-xl border border-[#BDA6CE]/30 rounded-3xl p-5 lg:p-9 shadow-sm hover:shadow-md transition-all">
           <h3 className="text-slate-800 font-extrabold mb-6 lg:mb-8 flex items-center gap-3 text-base lg:text-lg">
-            <span className="p-2 lg:p-2.5 bg-[#B4D3D9]/20 rounded-xl text-[#B4D3D9]"><Clock size={20}/></span> 
+            <span className="p-2 lg:p-2.5 bg-[#B4D3D9]/20 rounded-xl text-[#B4D3D9]"><Clock size={20}/></span>
             시간대별 집중 트렌드
           </h3>
           <ResponsiveContainer width="100%" height={220}>
@@ -146,11 +216,9 @@ export default function Dashboard({ sessions, onClearData }: DashboardProps) {
             </BarChart>
           </ResponsiveContainer>
         </div>
-
-        {/* 7일 추이 */}
         <div className="bg-white/80 backdrop-blur-xl border border-[#BDA6CE]/30 rounded-3xl p-5 lg:p-9 shadow-sm hover:shadow-md transition-all">
           <h3 className="text-slate-800 font-extrabold mb-6 lg:mb-8 flex items-center gap-3 text-base lg:text-lg">
-            <span className="p-2 lg:p-2.5 bg-[#BDA6CE]/20 rounded-xl text-[#BDA6CE]"><TrendingUp size={20}/></span> 
+            <span className="p-2 lg:p-2.5 bg-[#BDA6CE]/20 rounded-xl text-[#BDA6CE]"><TrendingUp size={20}/></span>
             주간 집중도 변화
           </h3>
           <ResponsiveContainer width="100%" height={220}>
@@ -164,6 +232,8 @@ export default function Dashboard({ sessions, onClearData }: DashboardProps) {
           </ResponsiveContainer>
         </div>
       </div>
+
+      <StudyCalendar sessions={sessions} />
 
       <div className="flex justify-end pt-2 pb-6 lg:pb-0">
         <button onClick={onClearData} className="flex items-center gap-2 text-xs lg:text-sm font-semibold text-slate-400 hover:text-red-400 transition-colors py-2 px-4 rounded-xl hover:bg-red-500/10">

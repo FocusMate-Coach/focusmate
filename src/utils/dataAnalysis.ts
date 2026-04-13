@@ -108,6 +108,22 @@ export function calcWeeklyTrend(sessions: StudySession[]): DailyData[] {
   });
 }
 
+export function calcMonthlyCalendar(
+  sessions: StudySession[],
+  year: number,
+  month: number // 1~12
+): { day: number; totalMinutes: number }[] {
+  const daysInMonth = new Date(year, month, 0).getDate();
+  return Array.from({ length: daysInMonth }, (_, i) => {
+    const day = i + 1;
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const totalSecs = sessions
+      .filter((s) => s.date === dateStr)
+      .reduce((sum, s) => sum + s.duration, 0);
+    return { day, totalMinutes: Math.round(totalSecs / 60) };
+  });
+}
+
 export function getTodaySessions(sessions: StudySession[]): StudySession[] {
   const today = new Date().toISOString().split('T')[0];
   return sessions.filter((s) => s.date === today).sort((a, b) => a.createdAt - b.createdAt);

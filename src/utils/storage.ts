@@ -1,7 +1,7 @@
 import type { StudySession } from '../types';
 
 const SESSIONS_KEY = 'focusmate_sessions';
-const MOCK_LOADED_KEY = 'focusmate_mock_loaded';
+const MOCK_LOADED_KEY = 'focusmate_mock_v2';
 
 export function loadSessions(): StudySession[] {
   try {

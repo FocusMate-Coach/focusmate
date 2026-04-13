@@ -1,7 +1,6 @@
 // src/components/AIFeedback/AIFeedback.tsx
 import { useState } from 'react';
 import { Sparkles, TrendingUp, AlertCircle, Lightbulb, RefreshCw, ChevronRight } from 'lucide-react';
-import OpenAI from 'openai';
 import type { StudySession } from '../../types';
 import { calcSummary, calcHourlyData, calcSubjectData, formatHour } from '../../utils/dataAnalysis';
 
@@ -97,29 +96,24 @@ export default function AIFeedback({ sessions }: AIFeedbackProps) {
   const [error, setError] = useState('');
 
   const handleGenerate = async () => {
-    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-    if (!apiKey || apiKey === '여기에_OpenAI_API_키를_입력하세요') {
-      setError('.env 파일에 VITE_OPENAI_API_KEY를 설정해 주세요.');
-      return;
-    }
-
     setLoading(true);
     setError('');
     setFeedback(null);
 
     try {
-      const client = new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
-      const response = await client.chat.completions.create({
-        model: 'gpt-4o-mini',
-        max_tokens: 1024,
-        messages: [
-          { role: 'system', content: '당신은 학습 패턴 분석 전문 AI 코치입니다. 학생의 학습 데이터를 분석하여 구체적이고 실행 가능한 피드백을 제공합니다. 데이터에 기반한 정확한 인사이트와 친근한 격려 메시지를 함께 제공해 주세요.' },
-          { role: 'user', content: buildPrompt(sessions) },
-        ],
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: buildPrompt(sessions) }),
       });
 
-      const text = response.choices[0].message.content ?? '';
-      setFeedback(parseAIResponse(text));
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? '서버 오류가 발생했습니다.');
+      }
+
+      setFeedback(parseAIResponse(data.text));
     } catch (err) {
       setError(`AI 분석 중 오류가 발생했습니다: ${err instanceof Error ? err.message : '알 수 없는 오류'}`);
     } finally {
